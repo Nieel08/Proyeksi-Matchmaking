@@ -1,0 +1,152 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartMatch - SkillBridge</title>
+    <link rel="stylesheet" href="{% static 'accounts/css/style.css' %}">
+</head>
+<body>
+    <header>
+        <h1>SkillBridge</h1>
+        <h2>SmartMatch</h2>
+    </header>
+
+    <main>
+        <p class="intro-text">
+            Temukan teman kolaborasi berdasarkan kemampuan dan skill yang kamu butuhkan.
+        </p>
+
+        {% if messages %}
+            <section class="messages" aria-live="polite">
+                {% for message in messages %}
+                    <p class="message message-{{ message.tags }}">{{ message }}</p>
+                {% endfor %}
+            </section>
+        {% endif %}
+
+        <section class="search-box">
+            <h3>Cari Kandidat</h3>
+            <form method="get" action="{% url 'matching-search' %}">
+                <label for="skills">Skill yang dibutuhkan:</label>
+                <input
+                    type="text"
+                    id="skills"
+                    name="skills"
+                    placeholder="Contoh: Python, Java, UI/UX"
+                    value="{{ skill_filter }}"
+                >
+
+                <label for="availability">Ketersediaan:</label>
+                <select id="availability" name="availability">
+                    <option value="">Semua</option>
+                    {% for value, label in availability_choices %}
+                        <option value="{{ value }}" {% if availability_filter == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit" class="primary-button">Cari Kandidat</button>
+                {% if filter_error %}<p class="form-error">{{ filter_error }}</p>{% endif %}
+            </form>
+        </section>
+
+        <section class="candidate-list">
+            <div class="section-heading">
+                <h3>Rekomendasi Kandidat</h3>
+                <a class="secondary-button" href="{% url 'matching-search' %}">Reset filter</a>
+            </div>
+
+            {% for candidate in candidates %}
+                <article class="candidate-card">
+                    <div class="candidate-header">
+                        <div class="candidate-avatar" aria-hidden="true">
+                            {{ candidate.full_name|slice:":1"|upper }}
+                        </div>
+                        <div class="candidate-info">
+                            <h4>{{ candidate.full_name }}</h4>
+                            <span class="availability-badge availability-{{ candidate.availability }}">
+                                {{ candidate.get_availability_display }}
+                            </span>
+                            <span class="admission-year">Angkatan {{ candidate.admission_year }}</span>
+                        </div>
+                    </div>
+
+                    <div class="skill-container">
+                        <strong>Skill:</strong>
+                        <div class="skill-list">
+                            {% for assignment in candidate.user_skills.all %}
+                                <span class="skill-badge">{{ assignment.skill.name }}</span>
+                            {% empty %}
+                                <span class="muted">Belum menambahkan skill.</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {% if candidate.github_url %}
+                        <p class="candidate-description">
+                            GitHub:
+                            <a href="{{ candidate.github_url }}" target="_blank" rel="noopener noreferrer">
+                                {{ candidate.github_url }}
+                            </a>
+                        </p>
+                    {% endif %}
+
+                    {% if can_invite %}
+                        {% if project_roles %}
+                            <form method="post" class="invite-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="candidate_id" value="{{ candidate.pk }}">
+                                <label for="project-role-{{ candidate.pk }}">Undang untuk peran:</label>
+                                <select id="project-role-{{ candidate.pk }}" name="project_role_id" required>
+                                    <option value="">Pilih peran proyek</option>
+                                    {% for role in project_roles %}
+                                        <option value="{{ role.pk }}">{{ role.project.title }} — {{ role.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="match-button">Kirim Undangan</button>
+                            </form>
+                        {% else %}
+                            <p class="muted">Buat proyek dan peran terlebih dahulu untuk mengirim undangan.</p>
+                        {% endif %}
+                    {% else %}
+                        <p class="muted">Login dan verifikasi akun untuk mengirim undangan kolaborasi.</p>
+                    {% endif %}
+                </article>
+            {% empty %}
+                <p class="empty-state">Belum ada kandidat terverifikasi yang sesuai dengan filter ini.</p>
+            {% endfor %}
+        </section>
+
+        {% if can_invite %}
+            <section class="history-section">
+                <h3>Riwayat Undangan Kolaborasi</h3>
+                <div class="history-container">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Kandidat</th>
+                                <th>Proyek / Peran</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invitation in invitation_history %}
+                                <tr>
+                                    <td>{{ invitation.recipient.full_name }}</td>
+                                    <td>{{ invitation.project_role.project.title }} / {{ invitation.project_role.name }}</td>
+                                    <td><span class="status-badge status-{{ invitation.status }}">{{ invitation.get_status_display }}</span></td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="3">Belum ada riwayat undangan.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        {% endif %}
+    </main>
+</body>
+</html>

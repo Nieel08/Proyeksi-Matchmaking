@@ -2,9 +2,10 @@
 
 The `accounts` app owns registration, campus-email OTP verification, session login,
 profile updates, and user skill tags. The profile and authentication routes are
-JSON endpoints protected by Django sessions and CSRF middleware. `Project`,
-`ProjectRole`, `Invitation`, and `Collaboration` are schema-only models; no
-matchmaking, project, invitation, or collaboration workflows are implemented.
+JSON endpoints protected by Django sessions and CSRF middleware. The root page
+provides a candidate search over verified user profiles and their skill tags.
+Verified, logged-in users can invite a candidate to a role in one of their own
+projects; sent invitations and their statuses are shown on the same page.
 
 NPM is stored as a unique string (8-15 ASCII digits). OTP verifies control of the
 provided email; verifying that an NPM belongs to a student requires an

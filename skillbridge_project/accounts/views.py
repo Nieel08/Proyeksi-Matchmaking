@@ -4,19 +4,23 @@ import secrets
 import smtplib
 from datetime import timedelta
 from json import JSONDecodeError
+from urllib.parse import urlencode
 
+from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
-from django.http import JsonResponse
+from django.http import HttpResponseForbidden, HttpResponseNotFound, JsonResponse
 from django.middleware.csrf import get_token
+from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .forms import ProfileForm, RegistrationForm, SkillNameForm
-from .models import EmailVerification, User, UserSkill
+from .models import EmailVerification, Invitation, ProjectRole, User, UserSkill
 
 
 logger = logging.getLogger(__name__)
@@ -299,3 +303,97 @@ def delete_skill(request, assignment_id):
     if not deleted:
         return JsonResponse({"error": "Skill tidak ditemukan."}, status=404)
     return JsonResponse({"message": "Skill dihapus dari profil."})
+
+
+@require_http_methods(["GET", "POST"])
+def matching_search(request):
+    skill_filter = request.GET.get("skills", "").strip()
+    availability_filter = request.GET.get("availability", "").strip()
+    candidates = (
+        User.objects.filter(is_campus_verified=True)
+        .prefetch_related("user_skills__skill")
+        .order_by("full_name")
+    )
+    if request.user.is_authenticated:
+        candidates = candidates.exclude(pk=request.user.pk)
+    if skill_filter:
+        candidates = candidates.filter(
+            user_skills__skill__name__icontains=skill_filter
+        ).distinct()
+
+    availability_values = {value for value, _ in User.Availability.choices}
+    filter_error = ""
+    if availability_filter and availability_filter not in availability_values:
+        filter_error = "Filter ketersediaan tidak valid."
+        candidates = candidates.none()
+    elif availability_filter:
+        candidates = candidates.filter(availability=availability_filter)
+
+    if request.method == "POST":
+        if not request.user.is_authenticated or not request.user.is_campus_verified:
+            return HttpResponseForbidden(
+                "Login dan verifikasi akun diperlukan untuk mengirim undangan."
+            )
+        try:
+            candidate_id = int(request.POST.get("candidate_id", ""))
+            project_role_id = int(request.POST.get("project_role_id", ""))
+        except (TypeError, ValueError):
+            messages.error(request, "Kandidat dan peran proyek wajib dipilih.")
+        else:
+            recipient = User.objects.filter(
+                pk=candidate_id, is_campus_verified=True
+            ).first()
+            project_role = ProjectRole.objects.filter(
+                pk=project_role_id, project__owner=request.user
+            ).first()
+            if recipient is None or recipient.pk == request.user.pk:
+                return HttpResponseNotFound("Kandidat tidak ditemukan.")
+            if project_role is None:
+                messages.error(request, "Pilih peran dari proyek milik Anda.")
+            elif Invitation.objects.filter(
+                project_role=project_role,
+                sender=request.user,
+                recipient=recipient,
+                status=Invitation.Status.PENDING,
+            ).exists():
+                messages.info(request, "Undangan untuk kandidat ini masih menunggu respons.")
+            else:
+                Invitation.objects.create(
+                    project_role=project_role,
+                    sender=request.user,
+                    recipient=recipient,
+                )
+                messages.success(request, f"Undangan terkirim kepada {recipient.full_name}.")
+
+        query = urlencode(
+            {"skills": skill_filter, "availability": availability_filter}
+        )
+        return redirect(f"{reverse('matching-search')}?{query}")
+
+    project_roles = ProjectRole.objects.none()
+    invitation_history = Invitation.objects.none()
+    can_invite = request.user.is_authenticated and request.user.is_campus_verified
+    if can_invite:
+        project_roles = ProjectRole.objects.filter(
+            project__owner=request.user
+        ).select_related("project").order_by("project__title", "name")
+        invitation_history = (
+            Invitation.objects.filter(sender=request.user)
+            .select_related("recipient", "project_role", "project_role__project")
+            .order_by("-created_at")[:20]
+        )
+
+    return render(
+        request,
+        "accounts/matching_search.html",
+        {
+            "candidates": candidates,
+            "skill_filter": skill_filter,
+            "availability_filter": availability_filter,
+            "availability_choices": User.Availability.choices,
+            "filter_error": filter_error,
+            "can_invite": can_invite,
+            "project_roles": project_roles,
+            "invitation_history": invitation_history,
+        },
+    )
