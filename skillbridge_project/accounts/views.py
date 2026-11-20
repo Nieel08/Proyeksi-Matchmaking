@@ -11,6 +11,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.http import HttpResponseForbidden, HttpResponseNotFound, JsonResponse
 from django.middleware.csrf import get_token
 from django.shortcuts import redirect, render
@@ -20,7 +21,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .forms import ProfileForm, RegistrationForm, SkillNameForm
-from .models import EmailVerification, Invitation, ProjectRole, User, UserSkill
+from .models import EmailVerification, Invitation, Project, ProjectRole, User, UserSkill
 
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,8 @@ def _user_payload(user):
     return {
         "id": user.pk,
         "full_name": user.full_name,
+        "user_type": user.user_type,
+        "academic_program": user.academic_program,
         "gender": user.gender,
         "admission_year": user.admission_year,
         "npm": user.npm,
@@ -224,7 +227,14 @@ def update_profile(request):
     data, error = _json_body(request)
     if error:
         return error
-    allowed_fields = {"full_name", "gender", "admission_year", "github_url", "availability"}
+    allowed_fields = {
+        "full_name",
+        "gender",
+        "admission_year",
+        "academic_program",
+        "github_url",
+        "availability",
+    }
     if set(data) - allowed_fields:
         return JsonResponse({"error": "Ada field profil yang tidak diizinkan."}, status=400)
     current = {field: getattr(user, field) for field in allowed_fields}
@@ -307,8 +317,10 @@ def delete_skill(request, assignment_id):
 
 @require_http_methods(["GET", "POST"])
 def matching_search(request):
+    query = request.GET.get("q", "").strip()
     skill_filter = request.GET.get("skills", "").strip()
     availability_filter = request.GET.get("availability", "").strip()
+    user_type_filter = request.GET.get("user_type", "").strip()
     candidates = (
         User.objects.filter(is_campus_verified=True)
         .prefetch_related("user_skills__skill")
@@ -321,13 +333,25 @@ def matching_search(request):
             user_skills__skill__name__icontains=skill_filter
         ).distinct()
 
+    if query:
+        candidates = candidates.filter(
+            Q(full_name__icontains=query) | Q(academic_program__icontains=query)
+        )
+
     availability_values = {value for value, _ in User.Availability.choices}
-    filter_error = ""
+    user_type_values = {value for value, _ in User.UserType.choices}
+    filter_errors = []
     if availability_filter and availability_filter not in availability_values:
-        filter_error = "Filter ketersediaan tidak valid."
+        filter_errors.append("Filter ketersediaan tidak valid.")
         candidates = candidates.none()
     elif availability_filter:
         candidates = candidates.filter(availability=availability_filter)
+
+    if user_type_filter and user_type_filter not in user_type_values:
+        filter_errors.append("Filter jenis anggota tidak valid.")
+        candidates = candidates.none()
+    elif user_type_filter:
+        candidates = candidates.filter(user_type=user_type_filter)
 
     if request.method == "POST":
         if not request.user.is_authenticated or not request.user.is_campus_verified:
@@ -366,7 +390,12 @@ def matching_search(request):
                 messages.success(request, f"Undangan terkirim kepada {recipient.full_name}.")
 
         query = urlencode(
-            {"skills": skill_filter, "availability": availability_filter}
+            {
+                "q": query,
+                "skills": skill_filter,
+                "availability": availability_filter,
+                "user_type": user_type_filter,
+            }
         )
         return redirect(f"{reverse('matching-search')}?{query}")
 
@@ -383,15 +412,33 @@ def matching_search(request):
             .order_by("-created_at")[:20]
         )
 
+    verified_users = User.objects.filter(is_campus_verified=True)
+    stats = {
+        "members": verified_users.count(),
+        "available": verified_users.filter(availability=User.Availability.READY).count(),
+        "lecturers": verified_users.filter(user_type=User.UserType.LECTURER).count(),
+        "projects": Project.objects.filter(status=Project.Status.PUBLISHED).count(),
+    }
+
     return render(
         request,
         "accounts/matching_search.html",
         {
             "candidates": candidates,
+            "matching_count": candidates.count(),
+            "query": query,
             "skill_filter": skill_filter,
             "availability_filter": availability_filter,
+            "user_type_filter": user_type_filter,
             "availability_choices": User.Availability.choices,
-            "filter_error": filter_error,
+            "user_type_choices": User.UserType.choices,
+            "filter_errors": filter_errors,
+            "stats": stats,
+            "featured_projects": Project.objects.filter(
+                status=Project.Status.PUBLISHED
+            ).select_related("owner").prefetch_related("roles__required_skills").order_by(
+                "-created_at"
+            )[:3],
             "can_invite": can_invite,
             "project_roles": project_roles,
             "invitation_history": invitation_history,

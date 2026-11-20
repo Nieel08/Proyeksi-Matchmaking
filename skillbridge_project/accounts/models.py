@@ -14,6 +14,10 @@ class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError("Email wajib diisi.")
+        if extra_fields.get("npm") == "":
+            extra_fields["npm"] = None
+        if extra_fields.get("admission_year") == "":
+            extra_fields["admission_year"] = None
         user = self.model(email=self.normalize_email(email).strip().lower(), **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -31,28 +35,41 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    class UserType(models.TextChoices):
+        STUDENT = "student", "Mahasiswa"
+        LECTURER = "lecturer", "Dosen"
+
     class Gender(models.TextChoices):
         MALE = "male", "Laki-laki"
         FEMALE = "female", "Perempuan"
         OTHER = "other", "Lainnya"
 
     class Availability(models.TextChoices):
-        READY = "ready", "Ready"
-        BUSY = "busy", "Busy"
+        READY = "ready", "Aktif mencari kolaborasi"
+        BUSY = "busy", "Sedang sibuk"
 
     full_name = models.CharField(max_length=150)
+    user_type = models.CharField(
+        max_length=12, choices=UserType.choices, default=UserType.STUDENT
+    )
+    academic_program = models.CharField(max_length=120, blank=True)
     gender = models.CharField(max_length=10, choices=Gender.choices)
     admission_year = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
         validators=[RegexValidator(r"^[0-9]{4}$", "Angkatan harus terdiri dari 4 digit.")]
     )
     npm = models.CharField(
         max_length=15,
         unique=True,
+        null=True,
+        blank=True,
         validators=[RegexValidator(r"^[0-9]{8,15}$", "NPM harus terdiri dari 8-15 digit.")],
     )
     email = models.EmailField(max_length=254, unique=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    is_demo = models.BooleanField(default=False)
     is_campus_verified = models.BooleanField(default=False)
     verified_at = models.DateTimeField(null=True, blank=True)
     github_url = models.URLField(
@@ -66,7 +83,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["full_name", "gender", "admission_year", "npm"]
+    REQUIRED_FIELDS = ["full_name", "gender"]
 
     class Meta:
         db_table = "users"

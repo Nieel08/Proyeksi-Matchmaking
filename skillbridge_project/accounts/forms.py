@@ -11,9 +11,13 @@ from .models import Skill, User
 
 class RegistrationForm(forms.Form):
     full_name = forms.CharField(max_length=150)
+    user_type = forms.ChoiceField(
+        choices=User.UserType.choices, required=False, initial=User.UserType.STUDENT
+    )
+    academic_program = forms.CharField(max_length=120, required=False)
     gender = forms.ChoiceField(choices=User.Gender.choices)
-    admission_year = forms.IntegerField(min_value=1900, max_value=9999)
-    npm = forms.CharField(max_length=15, min_length=8)
+    admission_year = forms.IntegerField(min_value=1900, max_value=9999, required=False)
+    npm = forms.CharField(max_length=15, min_length=8, required=False)
     email = forms.EmailField(max_length=254)
     password = forms.CharField(
         min_length=8, max_length=128, strip=False, widget=forms.PasswordInput
@@ -27,6 +31,8 @@ class RegistrationForm(forms.Form):
 
     def clean_npm(self):
         value = self.cleaned_data["npm"].strip()
+        if not value:
+            return ""
         if not re.fullmatch(r"[0-9]{8,15}", value):
             raise ValidationError("NPM harus terdiri dari 8-15 digit.")
         if User.objects.filter(npm=value).exists():
@@ -44,6 +50,17 @@ class RegistrationForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
+        user_type = cleaned_data.get("user_type") or User.UserType.STUDENT
+        cleaned_data["user_type"] = user_type
+        if user_type == User.UserType.STUDENT:
+            if not cleaned_data.get("admission_year"):
+                self.add_error("admission_year", "Angkatan wajib diisi untuk mahasiswa.")
+            if not cleaned_data.get("npm"):
+                self.add_error("npm", "NPM wajib diisi untuk mahasiswa.")
+        else:
+            cleaned_data["admission_year"] = None
+            cleaned_data["npm"] = None
+
         if cleaned_data.get("password"):
             candidate = User(
                 email=cleaned_data.get("email", ""),
@@ -61,13 +78,22 @@ class RegistrationForm(forms.Form):
             gender=self.cleaned_data["gender"],
             admission_year=self.cleaned_data["admission_year"],
             npm=self.cleaned_data["npm"],
+            user_type=self.cleaned_data["user_type"],
+            academic_program=self.cleaned_data["academic_program"].strip(),
         )
 
 
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ["full_name", "gender", "admission_year", "github_url", "availability"]
+        fields = [
+            "full_name",
+            "gender",
+            "admission_year",
+            "academic_program",
+            "github_url",
+            "availability",
+        ]
 
     def clean_full_name(self):
         value = self.cleaned_data["full_name"].strip()

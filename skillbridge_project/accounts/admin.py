@@ -17,20 +17,75 @@ from .models import (
 class AdminUserCreationForm(UserCreationForm):
     class Meta:
         model = User
-        fields = ("email", "full_name", "gender", "admission_year", "npm")
+        fields = (
+            "email",
+            "full_name",
+            "user_type",
+            "academic_program",
+            "gender",
+            "admission_year",
+            "npm",
+        )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get("user_type") == User.UserType.STUDENT:
+            if not cleaned_data.get("admission_year"):
+                self.add_error("admission_year", "Angkatan wajib diisi untuk mahasiswa.")
+            if not cleaned_data.get("npm"):
+                self.add_error("npm", "NPM wajib diisi untuk mahasiswa.")
+        else:
+            cleaned_data["admission_year"] = None
+            cleaned_data["npm"] = None
+        return cleaned_data
 
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
     add_form = AdminUserCreationForm
     ordering = ("email",)
-    list_display = ("email", "full_name", "npm", "is_campus_verified", "is_active")
-    search_fields = ("email", "full_name", "npm")
+    list_display = (
+        "email",
+        "full_name",
+        "user_type",
+        "npm",
+        "availability",
+        "is_campus_verified",
+        "is_active",
+    )
+    list_filter = ("user_type", "availability", "is_campus_verified", "is_demo")
+    search_fields = ("email", "full_name", "npm", "academic_program")
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Profil", {"fields": ("full_name", "gender", "admission_year", "npm", "github_url", "availability")}),
+        (
+            "Profil",
+            {
+                "fields": (
+                    "full_name",
+                    "user_type",
+                    "academic_program",
+                    "gender",
+                    "admission_year",
+                    "npm",
+                    "github_url",
+                    "availability",
+                )
+            },
+        ),
         ("Verifikasi", {"fields": ("is_campus_verified", "verified_at")}),
-        ("Hak akses", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
+        (
+            "Hak akses",
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "is_demo",
+                    "groups",
+                    "user_permissions",
+                )
+            },
+        ),
         ("Tanggal", {"fields": ("last_login", "date_joined")}),
     )
     add_fieldsets = (
@@ -41,6 +96,8 @@ class UserAdmin(DjangoUserAdmin):
                 "fields": (
                     "email",
                     "full_name",
+                    "user_type",
+                    "academic_program",
                     "gender",
                     "admission_year",
                     "npm",

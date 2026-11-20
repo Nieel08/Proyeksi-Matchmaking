@@ -1,11 +1,54 @@
 import json
 import re
+from io import StringIO
+from unittest.mock import patch
 
 from django.contrib.auth.hashers import check_password
 from django.core import mail
+from django.core.management import call_command, get_commands, load_command_class
 from django.test import Client, TestCase, override_settings
 
 from .models import EmailVerification, Invitation, Project, ProjectRole, Skill, User, UserSkill
+
+
+class CreateSuperuserCommandTests(TestCase):
+    def test_gender_prompt_prints_valid_codes_and_accepts_one(self):
+        self.assertEqual(get_commands()["createsuperuser"], "accounts")
+        command = load_command_class("accounts", "createsuperuser")
+        command.stdout = StringIO()
+
+        with patch("builtins.input", return_value="male"):
+            result = command.get_input_data(
+                User._meta.get_field("gender"), "Gender: "
+            )
+
+        self.assertEqual(result, "male")
+        self.assertIn("male (Laki-laki)", command.stdout.getvalue())
+        self.assertIn("female (Perempuan)", command.stdout.getvalue())
+        self.assertIn("other (Lainnya)", command.stdout.getvalue())
+
+
+class DemoDataCommandTests(TestCase):
+    def test_seed_command_is_repeatable_and_creates_student_and_lecturer_profiles(self):
+        call_command("seed_demo_data", stdout=StringIO())
+        initial_demo_count = User.objects.filter(is_demo=True).count()
+        initial_project_count = Project.objects.filter(
+            title__startswith="[Demo]"
+        ).count()
+
+        call_command("seed_demo_data", stdout=StringIO())
+
+        self.assertEqual(initial_demo_count, 19)
+        self.assertEqual(User.objects.filter(is_demo=True).count(), initial_demo_count)
+        self.assertEqual(
+            Project.objects.filter(title__startswith="[Demo]").count(),
+            initial_project_count,
+        )
+        lecturer = User.objects.get(email="demo.member16@skillbridge.example")
+        self.assertEqual(lecturer.user_type, User.UserType.LECTURER)
+        self.assertIsNone(lecturer.npm)
+        self.assertIsNone(lecturer.admission_year)
+        self.assertFalse(lecturer.has_usable_password())
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
@@ -61,6 +104,25 @@ class AccountsApiTests(TestCase):
             "/api/auth/verify-email/", {"email": user.email, "code": code}
         )
         self.assertEqual(second_use.status_code, 400)
+
+    def test_registration_allows_lecturers_without_student_identifiers(self):
+        data = {
+            **self.registration_data,
+            "email": "lecturer@kampus.ac.id",
+            "user_type": User.UserType.LECTURER,
+            "academic_program": "Dosen Informatika",
+            "admission_year": None,
+            "npm": "",
+        }
+
+        response = self.post_json("/api/auth/register/", data)
+
+        self.assertEqual(response.status_code, 201)
+        lecturer = User.objects.get(email="lecturer@kampus.ac.id")
+        self.assertEqual(lecturer.user_type, User.UserType.LECTURER)
+        self.assertEqual(lecturer.academic_program, "Dosen Informatika")
+        self.assertIsNone(lecturer.admission_year)
+        self.assertIsNone(lecturer.npm)
 
     def test_verification_code_is_locked_after_five_wrong_attempts(self):
         user, code = self.register_and_verify()
@@ -204,6 +266,25 @@ class MatchingSearchTests(TestCase):
         self.assertNotContains(response, self.other_candidate.full_name)
         self.assertNotContains(response, self.owner.full_name)
         self.assertNotContains(response, unverified.full_name)
+
+    def test_search_filters_lecturers_by_type_and_academic_program(self):
+        lecturer = User.objects.create_user(
+            email="lecturer@kampus.ac.id",
+            password="Secure-Lecturer-Password-2026!",
+            full_name="Dosen Contoh",
+            gender=User.Gender.OTHER,
+            user_type=User.UserType.LECTURER,
+            academic_program="Dosen Informatika",
+            is_campus_verified=True,
+        )
+
+        response = self.client.get(
+            "/", {"user_type": User.UserType.LECTURER, "q": "Informatika"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, lecturer.full_name)
+        self.assertNotContains(response, self.candidate.full_name)
 
     def test_post_creates_invitation_for_owned_project_role(self):
         response = self.client.post(

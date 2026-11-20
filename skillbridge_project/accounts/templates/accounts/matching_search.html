@@ -4,19 +4,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartMatch - SkillBridge</title>
+    <meta name="description" content="SkillBridge membantu mahasiswa dan dosen menemukan rekan kolaborasi kampus berdasarkan minat dan keahlian.">
+    <title>SkillBridge — Temukan rekan kolaborasi kampus</title>
     <link rel="stylesheet" href="{% static 'accounts/css/style.css' %}">
 </head>
 <body>
-    <header>
-        <h1>SkillBridge</h1>
-        <h2>SmartMatch</h2>
+    <header class="site-header">
+        <a class="brand" href="{% url 'matching-search' %}" aria-label="SkillBridge, beranda">
+            <span class="brand-mark">S</span>
+            <span>skillbridge<span class="brand-period">.</span></span>
+        </a>
+        <nav class="main-nav" aria-label="Navigasi utama">
+            <a href="#direktori">Cari kolaborator</a>
+            <a href="#proyek">Proyek</a>
+            <a href="#cara-kerja">Cara kerja</a>
+        </nav>
+        <a class="nav-cta" href="#direktori">Jelajahi komunitas <span aria-hidden="true">↗</span></a>
     </header>
 
     <main>
-        <p class="intro-text">
-            Temukan teman kolaborasi berdasarkan kemampuan dan skill yang kamu butuhkan.
-        </p>
+        <section class="hero">
+            <div class="hero-copy">
+                <p class="eyebrow"><span class="eyebrow-dot"></span> KOLABORASI KAMPUS, DIMULAI DI SINI</p>
+                <h1>Ide hebat tumbuh bersama <span>orang yang tepat.</span></h1>
+                <p class="hero-description">
+                    Temukan mahasiswa dan dosen lintas bidang, bentuk tim yang saling melengkapi,
+                    lalu wujudkan proyek kampus yang berdampak.
+                </p>
+                <div class="hero-actions">
+                    <a class="button button-primary" href="#direktori">Temukan kolaborator <span aria-hidden="true">→</span></a>
+                    <a class="text-link" href="#cara-kerja">Kenali SkillBridge <span aria-hidden="true">↓</span></a>
+                </div>
+                <div class="hero-trust">
+                    <div class="avatar-stack" aria-hidden="true">
+                        <span>R</span><span>N</span><span>A</span><span>+</span>
+                    </div>
+                    <p><strong>{{ stats.members }} anggota terverifikasi</strong><br>siap saling bertumbuh</p>
+                </div>
+            </div>
+            <div class="hero-art" aria-label="Ilustrasi jaringan kolaborasi">
+                <div class="art-orbit orbit-one"></div>
+                <div class="art-orbit orbit-two"></div>
+                <div class="art-card art-card-main">
+                    <span class="art-card-icon">✳</span>
+                    <span class="art-kicker">TIM YANG TEPAT</span>
+                    <strong>Beragam skill.<br>Satu tujuan.</strong>
+                    <div class="art-mini-tags"><span>Riset</span><span>Produk</span><span>Teknologi</span></div>
+                </div>
+                <div class="floating-note note-top"><span class="note-icon note-green">↗</span><span><strong>{{ stats.available }} aktif</strong><small>mencari kolaborasi</small></span></div>
+                <div class="floating-note note-bottom"><span class="note-icon note-orange">✦</span><span><strong>Lintas bidang</strong><small>mahasiswa & dosen</small></span></div>
+                <span class="art-spark spark-one">✳</span>
+                <span class="art-spark spark-two">✦</span>
+            </div>
+        </section>
 
         {% if messages %}
             <section class="messages" aria-live="polite">
@@ -26,112 +66,188 @@
             </section>
         {% endif %}
 
-        <section class="search-box">
-            <h3>Cari Kandidat</h3>
-            <form method="get" action="{% url 'matching-search' %}">
-                <label for="skills">Skill yang dibutuhkan:</label>
-                <input
-                    type="text"
-                    id="skills"
-                    name="skills"
-                    placeholder="Contoh: Python, Java, UI/UX"
-                    value="{{ skill_filter }}"
-                >
-
-                <label for="availability">Ketersediaan:</label>
-                <select id="availability" name="availability">
-                    <option value="">Semua</option>
-                    {% for value, label in availability_choices %}
-                        <option value="{{ value }}" {% if availability_filter == value %}selected{% endif %}>
-                            {{ label }}
-                        </option>
-                    {% endfor %}
-                </select>
-
-                <button type="submit" class="primary-button">Cari Kandidat</button>
-                {% if filter_error %}<p class="form-error">{{ filter_error }}</p>{% endif %}
-            </form>
+        <section class="stats-strip" aria-label="Ringkasan komunitas SkillBridge">
+            <div class="stat-item"><strong>{{ stats.members }}</strong><span>anggota terverifikasi</span></div>
+            <div class="stat-item"><strong>{{ stats.available }}</strong><span>aktif mencari tim</span></div>
+            <div class="stat-item"><strong>{{ stats.lecturers }}</strong><span>dosen di komunitas</span></div>
+            <div class="stat-item"><strong>{{ stats.projects }}</strong><span>proyek terbuka</span></div>
         </section>
 
-        <section class="candidate-list">
-            <div class="section-heading">
-                <h3>Rekomendasi Kandidat</h3>
-                <a class="secondary-button" href="{% url 'matching-search' %}">Reset filter</a>
+        <section class="section how-section" id="cara-kerja">
+            <div class="section-intro">
+                <p class="eyebrow">DARI IDE MENJADI AKSI</p>
+                <h2>Kolaborasi yang terasa lebih mudah.</h2>
+                <p>Temukan rekan dengan tujuan dan keahlian yang saling melengkapi, bukan sekadar satu kelompok kelas.</p>
+            </div>
+            <div class="feature-grid">
+                <article class="feature-card">
+                    <span class="feature-number">01</span>
+                    <span class="feature-icon icon-lilac">⌕</span>
+                    <h3>Temukan kecocokan</h3>
+                    <p>Cari berdasarkan skill, program studi, peran, dan ketersediaan anggota.</p>
+                </article>
+                <article class="feature-card">
+                    <span class="feature-number">02</span>
+                    <span class="feature-icon icon-peach">◎</span>
+                    <h3>Bangun tim beragam</h3>
+                    <p>Hubungkan mahasiswa dengan dosen dan rekan lintas disiplin ilmu.</p>
+                </article>
+                <article class="feature-card">
+                    <span class="feature-number">03</span>
+                    <span class="feature-icon icon-mint">↗</span>
+                    <h3>Wujudkan proyek</h3>
+                    <p>Bagikan kebutuhan tim, ajukan kolaborasi, dan kembangkan ide bersama.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="directory-section" id="direktori">
+            <div class="directory-heading">
+                <div>
+                    <p class="eyebrow">KOMUNITAS SKILLBRIDGE</p>
+                    <h2>Orang hebat, banyak kemungkinan.</h2>
+                    <p class="section-subtitle">Cari rekan yang bisa membantu ide Anda melangkah lebih jauh.</p>
+                </div>
+                <span class="result-count"><strong>{{ matching_count }}</strong> profil ditemukan</span>
             </div>
 
-            {% for candidate in candidates %}
-                <article class="candidate-card">
-                    <div class="candidate-header">
-                        <div class="candidate-avatar" aria-hidden="true">
-                            {{ candidate.full_name|slice:":1"|upper }}
-                        </div>
-                        <div class="candidate-info">
-                            <h4>{{ candidate.full_name }}</h4>
-                            <span class="availability-badge availability-{{ candidate.availability }}">
-                                {{ candidate.get_availability_display }}
-                            </span>
-                            <span class="admission-year">Angkatan {{ candidate.admission_year }}</span>
-                        </div>
-                    </div>
+            <form method="get" action="{% url 'matching-search' %}" class="filter-panel">
+                <div class="filter-field filter-keyword">
+                    <label for="q">Nama atau bidang</label>
+                    <div class="input-with-icon"><span aria-hidden="true">⌕</span><input type="search" id="q" name="q" placeholder="Contoh: informatika, Andini..." value="{{ query }}"></div>
+                </div>
+                <div class="filter-field filter-keyword">
+                    <label for="skills">Keahlian yang dibutuhkan</label>
+                    <div class="input-with-icon"><span aria-hidden="true">✳</span><input type="search" id="skills" name="skills" placeholder="Contoh: Python, desain..." value="{{ skill_filter }}"></div>
+                </div>
+                <div class="filter-field">
+                    <label for="user_type">Jenis anggota</label>
+                    <select id="user_type" name="user_type">
+                        <option value="">Mahasiswa & dosen</option>
+                        {% for value, label in user_type_choices %}
+                            <option value="{{ value }}" {% if user_type_filter == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="availability">Ketersediaan</label>
+                    <select id="availability" name="availability">
+                        <option value="">Semua status</option>
+                        {% for value, label in availability_choices %}
+                            <option value="{{ value }}" {% if availability_filter == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button class="button button-primary search-button" type="submit">Cari rekan <span aria-hidden="true">→</span></button>
+                {% if query or skill_filter or user_type_filter or availability_filter %}
+                    <a class="clear-filters" href="{% url 'matching-search' %}">Hapus filter</a>
+                {% endif %}
+            </form>
 
-                    <div class="skill-container">
-                        <strong>Skill:</strong>
-                        <div class="skill-list">
-                            {% for assignment in candidate.user_skills.all %}
-                                <span class="skill-badge">{{ assignment.skill.name }}</span>
+            {% for error in filter_errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+            <p class="demo-note"><span aria-hidden="true">ⓘ</span> Profil bertanda <strong>Demo</strong> adalah data contoh untuk mencoba fitur pencarian.</p>
+
+            <div class="member-grid">
+                {% for candidate in candidates %}
+                    <article class="member-card">
+                        <div class="member-card-top">
+                            <div class="member-avatar avatar-{{ forloop.counter|divisibleby:4|yesno:'d,c' }}">
+                                {{ candidate.full_name|slice:":1"|upper }}
+                            </div>
+                            <span class="availability-pill availability-{{ candidate.availability }}">
+                                <span class="status-dot"></span>{{ candidate.get_availability_display }}
+                            </span>
+                        </div>
+                        <div class="member-name-row">
+                            <h3>{{ candidate.full_name }}</h3>
+                            {% if candidate.is_demo %}<span class="demo-badge">Demo</span>{% endif %}
+                        </div>
+                        <span class="member-type">{{ candidate.get_user_type_display }}</span>
+                        <p class="member-program">{{ candidate.academic_program|default:"Bidang belum dicantumkan" }}</p>
+                        {% if candidate.user_type == "student" and candidate.admission_year %}
+                            <p class="member-year">Angkatan {{ candidate.admission_year }}</p>
+                        {% endif %}
+                        <div class="member-skills">
+                            {% for assignment in candidate.user_skills.all|slice:":4" %}
+                                <span>{{ assignment.skill.name }}</span>
                             {% empty %}
-                                <span class="muted">Belum menambahkan skill.</span>
+                                <span class="no-skill">Belum menambahkan keahlian</span>
                             {% endfor %}
                         </div>
-                    </div>
-
-                    {% if candidate.github_url %}
-                        <p class="candidate-description">
-                            GitHub:
-                            <a href="{{ candidate.github_url }}" target="_blank" rel="noopener noreferrer">
-                                {{ candidate.github_url }}
-                            </a>
-                        </p>
-                    {% endif %}
-
-                    {% if can_invite %}
-                        {% if project_roles %}
-                            <form method="post" class="invite-form">
-                                {% csrf_token %}
-                                <input type="hidden" name="candidate_id" value="{{ candidate.pk }}">
-                                <label for="project-role-{{ candidate.pk }}">Undang untuk peran:</label>
-                                <select id="project-role-{{ candidate.pk }}" name="project_role_id" required>
-                                    <option value="">Pilih peran proyek</option>
-                                    {% for role in project_roles %}
-                                        <option value="{{ role.pk }}">{{ role.project.title }} — {{ role.name }}</option>
-                                    {% endfor %}
-                                </select>
-                                <button type="submit" class="match-button">Kirim Undangan</button>
-                            </form>
+                        {% if can_invite %}
+                            {% if candidate.is_demo %}
+                                <p class="invite-hint">Profil contoh untuk demonstrasi; undangan tidak dikirim.</p>
+                            {% elif project_roles %}
+                                <form method="post" class="invite-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="candidate_id" value="{{ candidate.pk }}">
+                                    <label class="sr-only" for="project-role-{{ candidate.pk }}">Pilih peran proyek untuk {{ candidate.full_name }}</label>
+                                    <select id="project-role-{{ candidate.pk }}" name="project_role_id" required>
+                                        <option value="">Pilih proyek & peran</option>
+                                        {% for role in project_roles %}
+                                            <option value="{{ role.pk }}">{{ role.project.title }} — {{ role.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button class="invite-button" type="submit">Kirim undangan <span aria-hidden="true">↗</span></button>
+                                </form>
+                            {% else %}
+                                <p class="invite-hint">Buat proyek dan peran terlebih dahulu untuk mengirim undangan.</p>
+                            {% endif %}
                         {% else %}
-                            <p class="muted">Buat proyek dan peran terlebih dahulu untuk mengirim undangan.</p>
+                            <p class="invite-hint">Masuk dengan akun terverifikasi untuk mengundang kolaborator.</p>
                         {% endif %}
-                    {% else %}
-                        <p class="muted">Login dan verifikasi akun untuk mengirim undangan kolaborasi.</p>
-                    {% endif %}
-                </article>
-            {% empty %}
-                <p class="empty-state">Belum ada kandidat terverifikasi yang sesuai dengan filter ini.</p>
-            {% endfor %}
+                    </article>
+                {% empty %}
+                    <div class="empty-state">
+                        <span aria-hidden="true">⌕</span>
+                        <h3>Belum ada profil yang cocok</h3>
+                        <p>Coba ubah kata kunci atau pilih semua status untuk melihat lebih banyak anggota.</p>
+                        <a href="{% url 'matching-search' %}" class="text-link">Tampilkan semua anggota →</a>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="projects-section" id="proyek">
+            <div class="directory-heading">
+                <div>
+                    <p class="eyebrow">RUANG UNTUK IDE BARU</p>
+                    <h2>Proyek yang sedang mencari tim.</h2>
+                    <p class="section-subtitle">Lihat kebutuhan kolaborasi dari komunitas kampus.</p>
+                </div>
+                <span class="project-total">{{ stats.projects }} proyek terbuka</span>
+            </div>
+            <div class="project-grid">
+                {% for project in featured_projects %}
+                    <article class="project-card">
+                        <div class="project-card-meta"><span>{{ project.get_project_type_display }}</span><span>{{ project.get_status_display }}</span></div>
+                        <h3>{{ project.title }}</h3>
+                        <p>{{ project.description|truncatewords:22 }}</p>
+                        <div class="project-owner">
+                            <span class="owner-avatar">{{ project.owner.full_name|slice:":1"|upper }}</span>
+                            <span><strong>{{ project.owner.full_name }}</strong><small>{{ project.owner.get_user_type_display }} · {{ project.owner.academic_program }}</small></span>
+                        </div>
+                        {% for role in project.roles.all|slice:":2" %}
+                            <div class="project-role"><strong>{{ role.name }}</strong><span>{{ role.slots_left }} posisi tersedia</span></div>
+                        {% endfor %}
+                    </article>
+                {% empty %}
+                    <div class="empty-projects">
+                        <strong>Proyek kolaborasi akan muncul di sini.</strong>
+                        <span>Jalankan perintah data demo untuk melihat contoh proyek terbuka.</span>
+                    </div>
+                {% endfor %}
+            </div>
         </section>
 
         {% if can_invite %}
-            <section class="history-section">
-                <h3>Riwayat Undangan Kolaborasi</h3>
+            <section class="history-section" aria-labelledby="history-heading">
+                <div class="directory-heading">
+                    <div><p class="eyebrow">AKTIVITAS ANDA</p><h2 id="history-heading">Riwayat undangan.</h2></div>
+                </div>
                 <div class="history-container">
                     <table class="history-table">
-                        <thead>
-                            <tr>
-                                <th>Kandidat</th>
-                                <th>Proyek / Peran</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>Kandidat</th><th>Proyek / Peran</th><th>Status</th></tr></thead>
                         <tbody>
                             {% for invitation in invitation_history %}
                                 <tr>
@@ -147,6 +263,17 @@
                 </div>
             </section>
         {% endif %}
+
+        <section class="closing-banner">
+            <div><p class="eyebrow">SATU KAMPUS, BANYAK KEMUNGKINAN</p><h2>Kolaborasi baik dimulai dari percakapan.</h2><p>Temukan perspektif baru dan mulai langkah pertamamu hari ini.</p></div>
+            <a class="button button-light" href="#direktori">Jelajahi anggota <span aria-hidden="true">↑</span></a>
+        </section>
     </main>
+
+    <footer class="site-footer">
+        <a class="brand footer-brand" href="{% url 'matching-search' %}"><span class="brand-mark">S</span><span>skillbridge<span class="brand-period">.</span></span></a>
+        <p>Ruang kolaborasi untuk komunitas akademik.</p>
+        <span>© SkillBridge · Dibangun untuk ide yang berdampak.</span>
+    </footer>
 </body>
 </html>
