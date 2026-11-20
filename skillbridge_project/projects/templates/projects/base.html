@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Portal Kolaborasi{% endblock %}</title>
+<style>
+  body{font-family:system-ui,sans-serif;max-width:960px;margin:0 auto;padding:16px;color:#222}
+  nav a{margin-right:14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+  .card{border:1px solid #ddd;border-radius:10px;padding:14px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:99px;background:#eef;font-size:12px;margin-right:4px}
+  .btn{display:inline-block;padding:7px 14px;border:0;border-radius:6px;background:#1f4e79;color:#fff;cursor:pointer;text-decoration:none;font-size:14px}
+  .btn.gray{background:#777}.btn.red{background:#b3261e}.btn.green{background:#2e7d32}
+  .msg{padding:10px;border-radius:6px;margin:8px 0}
+  .msg.success{background:#e6f4ea}.msg.error{background:#fce8e6}
+  .role-box{border:1px dashed #aaa;border-radius:8px;padding:10px;margin:10px 0}
+  ul.errorlist{color:#b3261e;margin:0;padding-left:16px}
+  input[type=text],input[type=number],input[type=date],textarea,select{width:100%;padding:6px;box-sizing:border-box}
+</style>
+</head>
+<body>
+<nav>
+  <a href="{% url 'projects:list' %}">Semua Proyek</a>
+  <a href="{% url 'projects:mine' %}">Proyek Saya</a>
+  <a class="btn" href="{% url 'projects:create' %}">+ Buat Proyek</a>
+</nav>
+<hr>
+{% for m in messages %}<div class="msg {{ m.tags }}">{{ m }}</div>{% endfor %}
+{% block content %}{% endblock %}
+</body>
+</html>

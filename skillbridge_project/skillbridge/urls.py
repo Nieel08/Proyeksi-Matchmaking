@@ -23,4 +23,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', account_views.matching_search, name='matching-search'),
     path('api/', include('accounts.urls')),
+    path('proyek/', include('projects.urls')),
 ]
