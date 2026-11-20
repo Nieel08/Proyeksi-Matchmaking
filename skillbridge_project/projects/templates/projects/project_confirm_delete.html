@@ -1,0 +1,9 @@
+{% extends "projects/base.html" %}
+{% block content %}
+<h1>Hapus proyek?</h1>
+<p>Proyek <strong>{{ project.title }}</strong> beserta semua perannya akan dihapus permanen.</p>
+<form method="post">{% csrf_token %}
+  <button class="btn red">Ya, hapus</button>
+  <a class="btn gray" href="{% url 'projects:detail' project.pk %}">Batal</a>
+</form>
+{% endblock %}

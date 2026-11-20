@@ -116,10 +116,30 @@ class UserSkill(models.Model):
 
 
 class Project(models.Model):
+    # --- DITAMBAHKAN OLEH NATALIE (modul Posting Proyek) ---
+    class ProjectType(models.TextChoices):
+        LOMBA = "lomba", "Lomba"
+        KULIAH = "kuliah", "Proyek Kuliah"
+        PENELITIAN = "penelitian", "Penelitian"
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        PUBLISHED = "published", "Dipublikasikan"
+        CLOSED = "closed", "Ditutup"
+    # --------------------------------------------------------
+
     owner = models.ForeignKey(User, on_delete=models.PROTECT, related_name="owned_projects")
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(default=timezone.now)
+    # --- DITAMBAHKAN OLEH NATALIE ---
+    project_type = models.CharField(
+        max_length=20, choices=ProjectType.choices, default=ProjectType.LOMBA
+    )
+    deadline = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    updated_at = models.DateTimeField(auto_now=True)
+    # --------------------------------
 
     class Meta:
         db_table = "projects"
@@ -130,9 +150,18 @@ class ProjectRole(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(default=timezone.now)
+    # --- DITAMBAHKAN OLEH NATALIE ---
+    slots_needed = models.PositiveIntegerField(default=1)
+    slots_filled = models.PositiveIntegerField(default=0)
+    required_skills = models.ManyToManyField(Skill, blank=True, related_name="project_roles")
+    # --------------------------------
 
     class Meta:
         db_table = "project_roles"
+
+    @property
+    def slots_left(self):
+        return max(self.slots_needed - self.slots_filled, 0)
 
 
 class Invitation(models.Model):

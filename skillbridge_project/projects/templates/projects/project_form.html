@@ -1,0 +1,32 @@
+{% extends "projects/base.html" %}
+{% block content %}
+<h1>{% if project %}Edit Proyek{% else %}Buat Proyek / Kebutuhan Tim{% endif %}</h1>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+
+  <h2>Peran yang dibutuhkan</h2>
+  <p><small>Contoh: "Frontend Flutter", 1 orang, skill: Flutter, Dart.</small></p>
+  {{ formset.management_form }}
+  {{ formset.non_form_errors }}
+  <div id="role-list">
+    {% for f in formset %}<div class="role-box">{{ f.as_p }}</div>{% endfor %}
+  </div>
+  <button type="button" class="btn gray" id="add-role">+ Tambah peran</button>
+
+  <template id="empty-form"><div class="role-box">{{ formset.empty_form.as_p }}</div></template>
+
+  <hr>
+  <button class="btn gray" name="action" value="draft">Simpan Draft</button>
+  <button class="btn green" name="action" value="publish">Publikasikan</button>
+</form>
+
+<script>
+document.getElementById('add-role').onclick = function () {
+  const total = document.getElementById('id_roles-TOTAL_FORMS');
+  const html = document.getElementById('empty-form').innerHTML.replace(/__prefix__/g, total.value);
+  document.getElementById('role-list').insertAdjacentHTML('beforeend', html);
+  total.value = parseInt(total.value) + 1;
+};
+</script>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "projects/base.html" %}
+{% load project_extras %}
+{% block content %}
+<h1>Daftar Proyek & Kebutuhan Tim</h1>
+<p>Filter:
+  <a href="{% url 'projects:list' %}">Semua</a>
+  {% for value, label in types %}| <a href="?tipe={{ value }}">{{ label }}</a> {% endfor %}
+</p>
+<div class="grid">
+{% for p in page %}
+  <div class="card">
+    <h3><a href="{% url 'projects:detail' p.pk %}">{{ p.title }}</a></h3>
+    <span class="badge">{{ p.get_project_type_display }}</span>
+    <span class="badge">Dibuat oleh {{ p.owner|owner_label }}</span>
+    <p>Deadline: {{ p.deadline|date:"d M Y" }}</p>
+    {% for r in p.roles.all %}
+      <div>• {{ r.name }} <small>(sisa {{ r.slots_left }} dari {{ r.slots_needed }})</small></div>
+    {% endfor %}
+  </div>
+{% empty %}
+  <p>Belum ada proyek yang dipublikasikan.</p>
+{% endfor %}
+</div>
+<p>
+  {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}{% if tipe %}&tipe={{ tipe }}{% endif %}">« Sebelumnya</a>{% endif %}
+  Halaman {{ page.number }} / {{ page.paginator.num_pages }}
+  {% if page.has_next %}<a href="?page={{ page.next_page_number }}{% if tipe %}&tipe={{ tipe }}{% endif %}">Berikutnya »</a>{% endif %}
+</p>
+{% endblock %}
